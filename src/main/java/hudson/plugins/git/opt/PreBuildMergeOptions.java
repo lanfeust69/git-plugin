@@ -25,6 +25,11 @@ public class PreBuildMergeOptions implements Serializable {
      */
     public String mergeTarget = null;
 
+    /**
+     * Should we merge into target, or rebase on target.
+     */
+    public boolean rebase = false;
+
     @Exported
     public RemoteConfig getMergeRemote() {
         return mergeRemote;
@@ -41,6 +46,15 @@ public class PreBuildMergeOptions implements Serializable {
 
     public void setMergeTarget(String mergeTarget) {
         this.mergeTarget = mergeTarget;
+    }
+
+    @Exported
+    public boolean getRebase() {
+        return rebase;
+    }
+
+    public void setRebase(boolean rebase) {
+        this.rebase = rebase;
     }
 
     @Exported

@@ -273,7 +273,7 @@ public class GitSCM extends SCM implements Serializable {
 
             // replace with new merge options
             if (userMergeOptions != null) {
-                this.userMergeOptions = new UserMergeOptions(userMergeOptions.getMergeRemote(), userMergeOptions.getMergeTarget());
+                this.userMergeOptions = new UserMergeOptions(userMergeOptions.getMergeRemote(), userMergeOptions.getMergeTarget(), userMergeOptions.getRebase());
             }
         } catch (FormException ex) {
             throw new GitException("Error creating JGit merge options", ex);
@@ -321,7 +321,7 @@ public class GitSCM extends SCM implements Serializable {
             // update from version 1
             if (mergeOptions.doMerge()) {
                 userMergeOptions = new UserMergeOptions(mergeOptions.getRemoteBranchName(),
-                        mergeOptions.getMergeTarget());
+                        mergeOptions.getMergeTarget(), mergeOptions.getRebase());
             }
         }
 
@@ -1123,6 +1123,7 @@ public class GitSCM extends SCM implements Serializable {
 
         final String remoteBranchName = getParameterString(mergeOptions.getRemoteBranchName(), build);
         final String mergeTarget = getParameterString(mergeOptions.getMergeTarget(), build);
+        final boolean doRebase = mergeOptions.getRebase();
 
         Build returnedBuildData;
         if (mergeOptions.doMerge() && !revToBuild.containsBranchName(remoteBranchName)) {
@@ -1141,15 +1142,24 @@ public class GitSCM extends SCM implements Serializable {
                     // Do we need to merge this revision onto MergeTarget
 
                     // Only merge if there's a branch to merge that isn't us..
-                    listener.getLogger().println("Merging " + revToBuild + " onto " + mergeTarget);
+                    if (doRebase)
+                        listener.getLogger().println("Rebasing " + revToBuild + " onto " + mergeTarget);
+                    else
+                        listener.getLogger().println("Merging " + revToBuild + " onto " + mergeTarget);
 
                     // checkout origin/blah
                     ObjectId target = git.revParse(remoteBranchName);
 
-                    checkout(git, target, paramLocalBranch);
+                    if (doRebase)
+                        checkout(git, revToBuild.getSha1(), paramLocalBranch);
+                    else
+                        checkout(git, target, paramLocalBranch);
 
                     try {
-                        git.merge(revToBuild.getSha1());
+                        if (doRebase)
+                            git.rebase(target);
+                        else
+                            git.merge(revToBuild.getSha1());
                     } catch (Exception ex) {
                         // We still need to tag something to prevent
                         // repetitive builds from happening - tag the
@@ -1631,6 +1641,8 @@ public class GitSCM extends SCM implements Serializable {
                 mergeOptions.setMergeRemote(mergeRemote);
 
                 mergeOptions.setMergeTarget(mergeOptionsBean.getMergeTarget());
+                
+                mergeOptions.setRebase(mergeOptionsBean.getRebase());
             }
 
             return mergeOptions;

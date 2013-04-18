@@ -9,4 +9,7 @@
   <f:entry title="${%Branch to merge to}" field="mergeTarget">
     <f:textbox id="git.mergeTarget" clazz="required"/>
   </f:entry>
+  <f:entry title="Rebase on branch instead of merging" field="rebase">
+    <f:checkbox />
+  </f:entry>
 </j:jelly>
